@@ -11,6 +11,7 @@
             --bg-color: #1a1a2e;
             --card-bg: #16213e;
             --vvip-color: #f1c40f;
+            --success-color: #4ecca3;
         }
 
         body {
@@ -50,12 +51,13 @@
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             display: none;
-            white-space: pre-line; /* 줄바꿈 허용 */
+            white-space: pre-line;
+            line-height: 1.5;
         }
-        .success { background: rgba(78, 204, 163, 0.15); color: #4ecca3; border: 1px solid #4ecca3; }
-        .fail { background: rgba(233, 69, 96, 0.15); color: #e94560; border: 1px solid #e94560; }
+        .success { background: rgba(78, 204, 163, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
+        .fail { background: rgba(233, 69, 96, 0.15); color: var(--primary-color); border: 1px solid var(--primary-color); }
         .vvip-status { background: rgba(241, 196, 15, 0.15); color: var(--vvip-color); border: 1px solid var(--vvip-color); }
 
         .btn {
@@ -71,12 +73,10 @@
         }
 
         #authBtn { background: var(--primary-color); color: white; }
-        #gameBtn { background: #4ecca3; color: white; }
+        #gameBtn { background: var(--success-color); color: white; }
         #vvipBtn { background: var(--vvip-color); color: #1a1a2e; }
         
         .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        
-        /* 처음엔 인증 버튼만 보이게 설정 */
         .hidden { display: none; }
     </style>
 </head>
@@ -94,10 +94,8 @@
 
         <div id="status"></div>
 
-        <!-- 인증 전 버튼 -->
         <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 등급 확인</button>
         
-        <!-- 인증 후 나타날 버튼들 -->
         <div id="actionButtons" class="hidden">
             <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">🕹 VIP 방 입장</button>
             <button id="vvipBtn" class="btn" onclick="enterRoom('VVIP')">👑 VVIP 방 입장</button>
@@ -108,21 +106,22 @@
         const PIGGY_ADDRESS = "0xd371B8EDE3329bb476f8AAF548b8fAc0e9910EA5";
         const MIN_BALANCE = 1000;
         const VVIP_BALANCE = 10000001;
-        let userBalance = 0; // 전역 변수로 잔액 저장
+        let userBalance = 0;
+        let isVerified = false; // 인증 여부 체크
 
         async function checkToken() {
             const statusDiv = document.getElementById('status');
             const authBtn = document.getElementById('authBtn');
             const actionButtons = document.getElementById('actionButtons');
 
-            if (typeof window.ethereum === 'undefined') {
-                alert("메타마스크를 설치해주세요!");
-                return;
-            }
-
             try {
                 statusDiv.style.display = "block";
                 statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
+
+                // 지갑이 없으면 에러를 던져서 catch문(보유량 0 처리)으로 이동
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error("No Wallet");
+                }
 
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
@@ -134,45 +133,53 @@
 
                 const balanceRaw = await contract.balanceOf(userAddress);
                 userBalance = parseFloat(ethers.utils.formatEther(balanceRaw));
+                isVerified = true;
 
-                authBtn.classList.add('hidden');
-                actionButtons.classList.remove('hidden');
-
-                if (userBalance >= VVIP_BALANCE) {
-                    statusDiv.className = "vvip-status";
-                    statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
-                } else if (userBalance >= MIN_BALANCE) {
-                    statusDiv.className = "success";
-                    statusDiv.innerHTML = `✅ VIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
-                } else {
-                    statusDiv.className = "fail";
-                    statusDiv.innerHTML = `❌ 자격 미달\n(보유: ${userBalance.toLocaleString()} PIGI)`;
-                }
             } catch (err) {
-                console.error(err);
+                console.log("인증 실패 또는 지갑 없음: ", err.message);
+                userBalance = 0; // 지갑 없거나 취소하면 무조건 0개
+                isVerified = true; // 0개여도 결과는 보여줘야 하므로 true
+            }
+
+            // UI 업데이트
+            authBtn.classList.add('hidden');
+            actionButtons.classList.remove('hidden');
+
+            if (userBalance >= VVIP_BALANCE) {
+                statusDiv.className = "vvip-status";
+                statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
+            } else if (userBalance >= MIN_BALANCE) {
+                statusDiv.className = "success";
+                statusDiv.innerHTML = `✅ VIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
+            } else {
                 statusDiv.className = "fail";
-                statusDiv.innerText = "오류가 발생했습니다.";
+                statusDiv.innerHTML = `❌ 자격 미달\n(보유: ${userBalance.toLocaleString()} PIGI)\nVIP도 못 들어오네 ㅉㅉ PIGI 사라`;
             }
         }
 
-        // 💡 [핵심 추가] 입장 버튼 클릭 시 체크 함수
         function enterRoom(type) {
             const statusDiv = document.getElementById('status');
 
+            if (!isVerified) {
+                alert("먼저 인증 버튼을 눌러주세요!");
+                return;
+            }
+
             if (type === 'VVIP') {
                 if (userBalance >= VVIP_BALANCE) {
-                    location.href = 'game.html'; // VVIP 성공 시 이동
+                    location.href = 'game.html'; 
                 } else {
-                    // ㅄ 메시지 출력 로직
                     statusDiv.className = "fail";
                     statusDiv.innerHTML = `ㅋㅋ ㅄ\n(VVIP는 ${VVIP_BALANCE.toLocaleString()}개부터임)`;
                     alert("ㅋㅋ ㅄ");
                 }
             } else {
                 if (userBalance >= MIN_BALANCE) {
-                    location.href = 'game.html'; // VIP 성공 시 이동
+                    location.href = 'game.html'; 
                 } else {
-                    alert("VIP 자격도 없습니다.");
+                    statusDiv.className = "fail";
+                    statusDiv.innerHTML = `VIP도 못 들어오네 ㅉㅉ PIGI 사라`;
+                    alert("VIP도 못 들어오네 ㅉㅉ PIGI 사라");
                 }
             }
         }
