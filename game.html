@@ -1,86 +1,116 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
-    <title>Piggy Jump Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Piggy Run</title>
     <style>
-        body { background-color: #1a1a2e; color: white; text-align: center; font-family: sans-serif; overflow: hidden; }
-        canvas { border: 2px solid #e94560; background: #16213e; display: block; margin: 20px auto; touch-action: manipulation; }
-        .info { font-size: 18px; margin-bottom: 10px; }
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+        canvas {
+            background-color: #16213e;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <h1>🐷 Piggy Jump!</h1>
-    <p class="info">클릭하거나 스페이스바를 눌러 점프하세요!</p>
-    <canvas id="gameCanvas" width="400" height="500"></canvas>
-    <button onclick="location.href='index.html'" style="padding:10px; cursor:pointer;">돌아가기(이거 안돼)</button>
+    <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        let bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.5, lift: -10, velocity: 0 };
-        let pipes = [];
-        let score = 0;
-        let gameActive = true;
-
-        function drawBird() {
-            ctx.font = "40px serif";
-            ctx.fillText("🐷", bird.x, bird.y + bird.height);
+        // 캔버스 크기를 화면에 맞게 동적 조절
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth, 400);
+            canvas.height = Math.min(window.innerHeight, 600);
         }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        function createPipe() {
-            const gap = 200;
-            const topHeight = Math.random() * (canvas.height - gap - 100) + 50;
-            pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - gap });
+        let pig = { x: 50, y: canvas.height / 2, w: 40, h: 40, dy: 0 };
+        let gravity = 0.5;
+        let jump = -7;
+        let obstacles = [];
+        let score = 0;
+        let frames = 0;
+        let isGameOver = false;
+
+        function drawPig() {
+            ctx.fillStyle = '#e94560';
+            ctx.fillRect(pig.x, pig.y, pig.w, pig.h);
         }
 
         function update() {
-            if (!gameActive) return;
-            bird.velocity += bird.gravity;
-            bird.y += bird.velocity;
+            if (isGameOver) return;
 
-            if (bird.y + bird.height > canvas.height || bird.y < 0) gameOver();
+            pig.dy += gravity;
+            pig.y += pig.dy;
 
-            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) createPipe();
+            if (pig.y + pig.h > canvas.height || pig.y < 0) gameOver();
 
-            pipes.forEach((pipe, index) => {
-                pipe.x -= 3;
-                if (pipe.x + 50 < 0) { pipes.splice(index, 1); score++; }
+            if (frames % 100 === 0) {
+                let gap = 160;
+                let height = Math.random() * (canvas.height - gap - 100) + 50;
+                obstacles.push({ x: canvas.width, y: 0, w: 50, h: height, type: 'top' });
+                obstacles.push({ x: canvas.width, y: height + gap, w: 50, h: canvas.height, type: 'bottom' });
+            }
 
-                // 충돌 검사
-                if (bird.x + bird.width > pipe.x && bird.x < pipe.x + 50) {
-                    if (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom) gameOver();
+            obstacles.forEach((obs, i) => {
+                obs.x -= 2.5;
+                if (pig.x < obs.x + obs.w && pig.x + pig.w > obs.x &&
+                    pig.y < obs.y + obs.h && pig.y + pig.h > obs.y) gameOver();
+                if (obs.x + obs.w < 0) {
+                    obstacles.splice(i, 1);
+                    if (obs.type === 'top') score++;
                 }
             });
+            frames++;
         }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBird();
-            ctx.fillStyle = "#e94560";
-            pipes.forEach(pipe => {
-                ctx.fillRect(pipe.x, 0, 50, pipe.top);
-                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, 50, pipe.bottom);
-            });
+            drawPig();
+            ctx.fillStyle = '#4ecca3';
+            obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.w, obs.h));
             ctx.fillStyle = "white";
             ctx.font = "20px Arial";
-            ctx.fillText("Score: " + score, 10, 30);
+            ctx.fillText(`Score: ${score}`, 20, 40);
+
+            if (isGameOver) {
+                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.font = "30px Arial";
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
+                ctx.font = "18px Arial";
+                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 50);
+            }
         }
 
-        function gameOver() {
-            gameActive = false;
-            alert("게임 오버! 최종 점수: " + score);
-            location.reload();
+        function loop() { update(); draw(); requestAnimationFrame(loop); }
+        function gameOver() { isGameOver = true; }
+        function restart() {
+            pig.y = canvas.height / 2; pig.dy = 0; obstacles = []; score = 0; frames = 0; isGameOver = false;
         }
 
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
-        }
-
-        window.addEventListener('keydown', (e) => { if(e.code === 'Space') bird.velocity = bird.lift; });
-        canvas.addEventListener('mousedown', () => { bird.velocity = bird.lift; });
+        const handleInput = (e) => {
+            if (e.type === 'touchstart') e.preventDefault();
+            if (isGameOver) restart(); else pig.dy = jump;
+        };
+        window.addEventListener('mousedown', handleInput);
+        window.addEventListener('touchstart', handleInput, {passive: false});
 
         loop();
     </script>
