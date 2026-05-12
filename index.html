@@ -137,13 +137,13 @@
                 if (userBalance >= VVIP_BALANCE) { location.href = 'game.html'; } 
                 else { 
                     statusDiv.className = "info-box";
-                    statusDiv.innerHTML = `⚠️ VVIP 입장은 ${VVIP_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(현재: ${userBalance.toLocaleString()} PIGI)`;
+                    statusDiv.innerHTML = `⚠️ VVIP 입장은 ${VVIP_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(VVIP 인증은 PC 환경에서만 가능합니다)`;
                 }
             } else {
                 if (userBalance >= MIN_BALANCE) { location.href = 'game.html'; } 
                 else { 
                     statusDiv.className = "info-box";
-                    statusDiv.innerHTML = `⚠️ VIP 입장은 ${MIN_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(현재: ${userBalance.toLocaleString()} PIGI)`;
+                    statusDiv.innerHTML = `⚠️ VIP 입장은 ${MIN_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(VIP 인증은 PC 환경에서만 가능합니다)`;
                 }
             }
         }
