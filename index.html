@@ -13,7 +13,6 @@
             --vvip-color: #f1c40f;
             --success-color: #4ecca3;
         }
-
         body {
             font-family: 'Apple SD Gothic Neo', sans-serif;
             background-color: var(--bg-color);
@@ -24,7 +23,6 @@
             align-items: center;
             min-height: 100vh;
         }
-
         .container {
             background: var(--card-bg);
             width: 90%;
@@ -35,7 +33,6 @@
             text-align: center;
             border: 1px solid rgba(233, 69, 96, 0.2);
         }
-
         .hero-img {
             width: 180px;
             height: auto;
@@ -43,10 +40,8 @@
             margin-bottom: 25px;
             filter: drop-shadow(0 5px 15px rgba(233, 69, 96, 0.3));
         }
-
         h1 { color: var(--primary-color); margin-bottom: 10px; font-size: 2rem; }
         .description { color: #95a5a6; font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; }
-
         #status {
             padding: 15px;
             border-radius: 12px;
@@ -59,7 +54,6 @@
         .success { background: rgba(78, 204, 163, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
         .fail { background: rgba(233, 69, 96, 0.15); color: var(--primary-color); border: 1px solid var(--primary-color); }
         .vvip-status { background: rgba(241, 196, 15, 0.15); color: var(--vvip-color); border: 1px solid var(--vvip-color); }
-
         .btn {
             width: 100%;
             padding: 16px;
@@ -71,31 +65,24 @@
             transition: 0.3s;
             margin-top: 10px;
         }
-
         #authBtn { background: var(--primary-color); color: white; }
         #gameBtn { background: var(--success-color); color: white; }
         #vvipBtn { background: var(--vvip-color); color: #1a1a2e; }
-        
         .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <img src="Gemini_Generated_Image_bf3ambf3ambf3amb.png" alt="Crown Pig" class="hero-img">
-        
+        <img src="pig.png" alt="Crown Pig" class="hero-img">
         <h1>Piggy VIP Lounge</h1>
         <p class="description">
             인증을 통해 입장 등급을 확인하세요.<br>
             <b>1,000 PIGI</b>: VIP 🕹<br>
             <b>10,000,001 PIGI</b>: VVIP 👑
         </p>
-
         <div id="status"></div>
-
         <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 등급 확인</button>
-        
         <div id="actionButtons" class="hidden">
             <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">🕹 VIP 방 입장</button>
             <button id="vvipBtn" class="btn" onclick="enterRoom('VVIP')">👑 VVIP 방 입장</button>
@@ -114,11 +101,14 @@
             const authBtn = document.getElementById('authBtn');
             const actionButtons = document.getElementById('actionButtons');
 
-            // 💡 [수정] 모바일 딥링크 로직 개선 (PC에서 멈추지 않게 함)
+            // 💡 모바일 환경 디버깅: 메타마스크 앱 내 브라우저로 강제 이동
             const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-            if (typeof window.ethereum === 'undefined' && isMobile) {
-                const dappUrl = window.location.host + window.location.pathname;
-                location.href = "https://metamask.app.link/dapp/" + dappUrl;
+            const isInMetaMask = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
+
+            if (isMobile && !isInMetaMask) {
+                // 현재 URL에서 http/https 프로토콜 제거 후 메타마스크 딥링크 결합
+                const pureUrl = window.location.href.replace(/^https?:\/\//, "");
+                location.href = "https://metamask.app.link/dapp/" + pureUrl;
                 return;
             }
 
@@ -126,7 +116,6 @@
                 statusDiv.style.display = "block";
                 statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
 
-                // PC에서 지갑이 없으면 에러 던져서 0점 처리
                 if (typeof window.ethereum === 'undefined') {
                     throw new Error("No Wallet");
                 }
@@ -149,7 +138,6 @@
                 isVerified = true; 
             }
 
-            // 결과 화면 표시
             authBtn.classList.add('hidden');
             actionButtons.classList.remove('hidden');
 
@@ -167,12 +155,10 @@
 
         function enterRoom(type) {
             const statusDiv = document.getElementById('status');
-
             if (!isVerified) {
                 alert("먼저 인증 버튼을 눌러주세요!");
                 return;
             }
-
             if (type === 'VVIP') {
                 if (userBalance >= VVIP_BALANCE) {
                     location.href = 'game.html'; 
