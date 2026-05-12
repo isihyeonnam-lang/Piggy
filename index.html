@@ -107,18 +107,26 @@
         const MIN_BALANCE = 1000;
         const VVIP_BALANCE = 10000001;
         let userBalance = 0;
-        let isVerified = false; // 인증 여부 체크
+        let isVerified = false;
 
         async function checkToken() {
             const statusDiv = document.getElementById('status');
             const authBtn = document.getElementById('authBtn');
             const actionButtons = document.getElementById('actionButtons');
 
+            // 💡 [수정] 모바일 딥링크 로직 개선 (PC에서 멈추지 않게 함)
+            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+            if (typeof window.ethereum === 'undefined' && isMobile) {
+                const dappUrl = window.location.host + window.location.pathname;
+                location.href = "https://metamask.app.link/dapp/" + dappUrl;
+                return;
+            }
+
             try {
                 statusDiv.style.display = "block";
                 statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
 
-                // 지갑이 없으면 에러를 던져서 catch문(보유량 0 처리)으로 이동
+                // PC에서 지갑이 없으면 에러 던져서 0점 처리
                 if (typeof window.ethereum === 'undefined') {
                     throw new Error("No Wallet");
                 }
@@ -136,12 +144,12 @@
                 isVerified = true;
 
             } catch (err) {
-                console.log("인증 실패 또는 지갑 없음: ", err.message);
-                userBalance = 0; // 지갑 없거나 취소하면 무조건 0개
-                isVerified = true; // 0개여도 결과는 보여줘야 하므로 true
+                console.log("인증 실패: ", err.message);
+                userBalance = 0; 
+                isVerified = true; 
             }
 
-            // UI 업데이트
+            // 결과 화면 표시
             authBtn.classList.add('hidden');
             actionButtons.classList.remove('hidden');
 
