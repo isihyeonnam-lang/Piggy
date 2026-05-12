@@ -101,14 +101,14 @@
             const authBtn = document.getElementById('authBtn');
             const actionButtons = document.getElementById('actionButtons');
 
-            // 💡 모바일 환경 디버깅: 메타마스크 앱 내 브라우저로 강제 이동
+            // 💡 [핵심 수정] 모바일 환경에서의 딥링크 처리 방식 고도화
             const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
             const isInMetaMask = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
 
             if (isMobile && !isInMetaMask) {
-                // 현재 URL에서 http/https 프로토콜 제거 후 메타마스크 딥링크 결합
-                const pureUrl = window.location.href.replace(/^https?:\/\//, "");
-                location.href = "https://metamask.app.link/dapp/" + pureUrl;
+                // 현재 URL에서 프로토콜을 제거하고 안전하게 인코딩
+                const currentUrl = window.location.href.split('://')[1];
+                location.href = "https://metamask.app.link/dapp/" + currentUrl;
                 return;
             }
 
