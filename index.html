@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piggy VIP Lounge</title>
+    <title>Piggy Lounge</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <style>
         :root {
@@ -12,6 +12,7 @@
             --card-bg: #16213e;
             --vvip-color: #f1c40f;
             --success-color: #4ecca3;
+            --normal-color: #95a5a6;
         }
         body {
             font-family: 'Apple SD Gothic Neo', sans-serif;
@@ -34,69 +35,47 @@
             border: 1px solid rgba(233, 69, 96, 0.2);
         }
         .hero-img {
-            width: 160px;
+            width: 150px;
             height: auto;
             border-radius: 20px;
             margin-bottom: 20px;
-            filter: drop-shadow(0 5px 15px rgba(233, 69, 96, 0.3));
         }
         h1 { color: var(--primary-color); margin-bottom: 8px; font-size: 1.8rem; }
-        .description { color: #95a5a6; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
-
-        /* 가이드 박스 디자인 */
+        .description { color: #95a5a6; font-size: 0.85rem; line-height: 1.5; margin-bottom: 25px; }
         #status {
-            padding: 18px;
-            border-radius: 15px;
+            padding: 15px;
+            border-radius: 12px;
             margin-bottom: 20px;
             font-size: 0.9rem;
             display: none;
             white-space: pre-line;
-            line-height: 1.6;
-            text-align: left;
+            line-height: 1.5;
         }
-        .guide-box { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--primary-color); color: #fff; }
-        .success { background: rgba(78, 204, 163, 0.1); border: 1px solid var(--success-color); color: var(--success-color); text-align: center !important; }
-        .fail { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--primary-color); color: var(--primary-color); text-align: center !important; }
-
-        .btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 1rem;
-            font-weight: bold;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
+        .info-box { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--primary-color); color: white; }
+        .success { background: rgba(78, 204, 163, 0.1); border: 1px solid var(--success-color); color: var(--success-color); }
+        .vvip-status { background: rgba(241, 196, 15, 0.1); border: 1px solid var(--vvip-color); color: var(--vvip-color); }
+        
+        .btn { width: 100%; padding: 15px; font-size: 1rem; font-weight: bold; border-radius: 12px; border: none; cursor: pointer; transition: 0.3s; margin-top: 10px; }
         #authBtn { background: var(--primary-color); color: white; }
-        #copyBtn { background: #34495e; color: white; border: 1px dashed #fff; }
+        #normalBtn { background: var(--normal-color); color: #1a1a2e; }
         #gameBtn { background: var(--success-color); color: white; }
         #vvipBtn { background: var(--vvip-color); color: #1a1a2e; }
-        
         .btn:hover { transform: translateY(-2px); opacity: 0.9; }
         .hidden { display: none; }
-        .highlight { color: var(--vvip-color); font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <img src="pig.png" alt="Crown Pig" class="hero-img">
-        <h1>Piggy VIP Lounge</h1>
-        <p class="description">
-            1,000 PIGI 이상 보유자만 입장이 가능합니다.<br>
-            (VVIP는 10,000,001 PIGI 이상)
-        </p>
-
+        <img src="Gemini_Generated_Image_bf3ambf3ambf3amb.png" alt="Pig" class="hero-img">
+        <h1>Piggy Lounge</h1>
+        <p class="description">인증 후 입장 가능한 등급을 확인하세요.</p>
         <div id="status"></div>
-
         <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 등급 확인</button>
-        <button id="copyBtn" class="btn hidden" onclick="copyUrl()">주소 복사하기 (클릭)</button>
-
         <div id="actionButtons" class="hidden">
-            <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">🕹 VIP 방 입장</button>
-            <button id="vvipBtn" class="btn" onclick="enterRoom('VVIP')">👑 VVIP 방 입장</button>
+            <button id="normalBtn" class="btn" onclick="location.href='game.html'">🕹 일반 입장 (무료)</button>
+            <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">💎 VIP 전용 입장</button>
+            <button id="vvipBtn" class="btn" onclick="enterRoom('VVIP')">👑 VVIP 전용 입장</button>
         </div>
     </div>
 
@@ -105,47 +84,17 @@
         const MIN_BALANCE = 1000;
         const VVIP_BALANCE = 10000001;
         let userBalance = 0;
-        let isVerified = false;
-
-        function copyUrl() {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                alert("주소가 복사되었습니다!\n이제 메타마스크 앱을 실행하세요.");
-            });
-        }
 
         async function checkToken() {
             const statusDiv = document.getElementById('status');
             const authBtn = document.getElementById('authBtn');
-            const copyBtn = document.getElementById('copyBtn');
             const actionButtons = document.getElementById('actionButtons');
 
-            const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-            const isInMetaMask = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
-
-            // 💡 모바일 사용자를 위한 초정밀 가이드
-            if (isMobile && !isInMetaMask) {
-                statusDiv.style.display = "block";
-                statusDiv.className = "guide-box";
-                statusDiv.innerHTML = `
-                    <b style="color:var(--primary-color)">⚠️ 모바일 접속 방법</b>
-                    1. 아래 <span class="highlight">[주소 복사]</span> 버튼 클릭
-                    2. <span class="highlight">메타마스크 앱</span> 실행
-                    3. 하단 메뉴의 <span class="highlight">나침반 아이콘(브라우저)</span> 클릭
-                    4. 상단 검색창에 주소 <span class="highlight">붙여넣기</span> 후 이동
-                `;
-                copyBtn.classList.remove('hidden');
-                authBtn.innerText = "안내에 따라 이동해주세요";
-                authBtn.disabled = true;
-                authBtn.style.opacity = "0.5";
-                return;
-            }
-
             try {
-                statusDiv.style.display = "block";
-                statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
-
                 if (typeof window.ethereum === 'undefined') throw new Error("No Wallet");
+                
+                statusDiv.style.display = "block";
+                statusDiv.innerText = "⏳ 보유량 확인 중...";
 
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
@@ -157,54 +106,44 @@
 
                 const balanceRaw = await contract.balanceOf(userAddress);
                 userBalance = parseFloat(ethers.utils.formatEther(balanceRaw));
-                isVerified = true;
-
             } catch (err) {
-                userBalance = 0; 
-                isVerified = true; 
+                userBalance = 0;
             }
 
             authBtn.classList.add('hidden');
-            copyBtn.classList.add('hidden');
             actionButtons.classList.remove('hidden');
-
             updateStatusUI();
         }
 
         function updateStatusUI() {
             const statusDiv = document.getElementById('status');
-            statusDiv.style.textAlign = "center";
+            statusDiv.style.display = "block";
             if (userBalance >= VVIP_BALANCE) {
                 statusDiv.className = "vvip-status";
-                statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(${userBalance.toLocaleString()} PIGI 보유)`;
+                statusDiv.innerHTML = `👑 VVIP 등급 확인 완료`;
             } else if (userBalance >= MIN_BALANCE) {
                 statusDiv.className = "success";
-                statusDiv.innerHTML = `✅ VIP 등급 확인!\n(${userBalance.toLocaleString()} PIGI 보유)`;
+                statusDiv.innerHTML = `✅ VIP 등급 확인 완료`;
             } else {
-                statusDiv.className = "fail";
-                statusDiv.innerHTML = `❌ 자격 미달\n(${userBalance.toLocaleString()} PIGI 보유)\nPIGI 사라`;
+                statusDiv.style.display = "none";
             }
         }
 
         function enterRoom(type) {
             const statusDiv = document.getElementById('status');
-            if (!isVerified) return;
+            statusDiv.style.display = "block";
             
             if (type === 'VVIP') {
-                if (userBalance >= VVIP_BALANCE) {
-                    location.href = 'game.html'; 
-                } else {
-                    statusDiv.className = "fail";
-                    statusDiv.innerHTML = `ㅋㅋ ㅄ\n(VVIP는 ${VVIP_BALANCE.toLocaleString()}개부터임)`;
-                    alert("ㅋㅋ ㅄ");
+                if (userBalance >= VVIP_BALANCE) { location.href = 'game.html'; } 
+                else { 
+                    statusDiv.className = "info-box";
+                    statusDiv.innerHTML = `⚠️ VVIP 입장은 ${VVIP_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(현재: ${userBalance.toLocaleString()} PIGI)`;
                 }
             } else {
-                if (userBalance >= MIN_BALANCE) {
-                    location.href = 'game.html'; 
-                } else {
-                    statusDiv.className = "fail";
-                    statusDiv.innerHTML = `VIP도 못 들어오네 ㅉㅉ PIGI 사라`;
-                    alert("VIP도 못 들어오네 ㅉㅉ PIGI 사라");
+                if (userBalance >= MIN_BALANCE) { location.href = 'game.html'; } 
+                else { 
+                    statusDiv.className = "info-box";
+                    statusDiv.innerHTML = `⚠️ VIP 입장은 ${MIN_BALANCE.toLocaleString()} PIGI가 필요합니다.\n(현재: ${userBalance.toLocaleString()} PIGI)`;
                 }
             }
         }
