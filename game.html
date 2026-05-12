@@ -20,6 +20,10 @@
             background-color: #16213e;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
             display: block;
+            /* PC에서 화면이 잘리지 않도록 최대 높이 제한 */
+            max-height: 95vh; 
+            max-width: 95vw;
+            object-fit: contain;
         }
     </style>
 </head>
@@ -30,25 +34,51 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // 캔버스 크기를 화면에 맞게 동적 조절
+        // 돼지 이미지 로드
+        const pigImg = new Image();
+        pigImg.src = 'pig.png'; // index.html에서 쓴 이미지와 같은 파일명
+
         function resizeCanvas() {
-            canvas.width = Math.min(window.innerWidth, 400);
-            canvas.height = Math.min(window.innerHeight, 600);
+            // 화면 비율에 맞춰서 PC/모바일 모두 안 짤리게 계산
+            const ratio = 2/3; // 가로 400, 세로 600 비율
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+
+            if (width / height > ratio) {
+                width = height * ratio;
+            } else {
+                height = width / ratio;
+            }
+
+            canvas.width = 400; // 내부 논리 좌표는 고정 (계산 편의성)
+            canvas.height = 600;
+            
+            canvas.style.width = width * 0.95 + 'px';
+            canvas.style.height = height * 0.95 + 'px';
         }
+        
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        let pig = { x: 50, y: canvas.height / 2, w: 40, h: 40, dy: 0 };
-        let gravity = 0.5;
-        let jump = -7;
+        let pig = { x: 50, y: 300, w: 50, h: 50, dy: 0 }; // 돼지 크기 살짝 키움
+        let gravity = 0.6;
+        let jump = -9;
         let obstacles = [];
         let score = 0;
         let frames = 0;
         let isGameOver = false;
 
         function drawPig() {
-            ctx.fillStyle = '#e94560';
-            ctx.fillRect(pig.x, pig.y, pig.w, pig.h);
+            // 네모 대신 이미지 그리기
+            if (pigImg.complete) {
+                ctx.drawImage(pigImg, pig.x, pig.y, pig.w, pig.h);
+            } else {
+                // 이미지 로딩 전엔 임시로 핑크색 원
+                ctx.fillStyle = '#ffafbd';
+                ctx.beginPath();
+                ctx.arc(pig.x + 25, pig.y + 25, 25, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
         function update() {
@@ -60,16 +90,18 @@
             if (pig.y + pig.h > canvas.height || pig.y < 0) gameOver();
 
             if (frames % 100 === 0) {
-                let gap = 160;
-                let height = Math.random() * (canvas.height - gap - 100) + 50;
-                obstacles.push({ x: canvas.width, y: 0, w: 50, h: height, type: 'top' });
-                obstacles.push({ x: canvas.width, y: height + gap, w: 50, h: canvas.height, type: 'bottom' });
+                let gap = 180;
+                let height = Math.random() * (canvas.height - gap - 150) + 50;
+                obstacles.push({ x: canvas.width, y: 0, w: 60, h: height, type: 'top' });
+                obstacles.push({ x: canvas.width, y: height + gap, w: 60, h: canvas.height, type: 'bottom' });
             }
 
             obstacles.forEach((obs, i) => {
-                obs.x -= 2.5;
-                if (pig.x < obs.x + obs.w && pig.x + pig.w > obs.x &&
-                    pig.y < obs.y + obs.h && pig.y + pig.h > obs.y) gameOver();
+                obs.x -= 3;
+                // 충돌 판정 (이미지 크기에 맞춰 최적화)
+                if (pig.x + 5 < obs.x + obs.w && pig.x + pig.w - 5 > obs.x &&
+                    pig.y + 5 < obs.y + obs.h && pig.y + pig.h - 5 > obs.y) gameOver();
+                
                 if (obs.x + obs.w < 0) {
                     obstacles.splice(i, 1);
                     if (obs.type === 'top') score++;
@@ -80,29 +112,48 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 배경 격자 (심심하지 않게)
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            for(let i=0; i<canvas.width; i+=50) {
+                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke();
+            }
+
             drawPig();
-            ctx.fillStyle = '#4ecca3';
-            obstacles.forEach(obs => ctx.fillRect(obs.x, obs.y, obs.w, obs.h));
+
+            // 장애물 디자인 (그라데이션)
+            obstacles.forEach(obs => {
+                ctx.fillStyle = '#4ecca3';
+                ctx.fillRect(obs.x, obs.y, obs.w, obs.h);
+                ctx.strokeStyle = '#45b791';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(obs.x, obs.y, obs.w, obs.h);
+            });
+
             ctx.fillStyle = "white";
-            ctx.font = "20px Arial";
-            ctx.fillText(`Score: ${score}`, 20, 40);
+            ctx.font = "bold 24px Arial";
+            ctx.textAlign = "left";
+            ctx.fillText(`SCORE: ${score}`, 20, 40);
 
             if (isGameOver) {
-                ctx.fillStyle = "rgba(0,0,0,0.8)";
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = "white";
                 ctx.textAlign = "center";
-                ctx.font = "30px Arial";
-                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2);
-                ctx.font = "18px Arial";
-                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 50);
+                ctx.font = "bold 40px Arial";
+                ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 20);
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "#e94560";
+                ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2 + 30);
+                ctx.fillStyle = "white";
+                ctx.fillText("Tap to Restart", canvas.width / 2, canvas.height / 2 + 80);
             }
         }
 
         function loop() { update(); draw(); requestAnimationFrame(loop); }
         function gameOver() { isGameOver = true; }
         function restart() {
-            pig.y = canvas.height / 2; pig.dy = 0; obstacles = []; score = 0; frames = 0; isGameOver = false;
+            pig.y = 300; pig.dy = 0; obstacles = []; score = 0; frames = 0; isGameOver = false;
         }
 
         const handleInput = (e) => {
