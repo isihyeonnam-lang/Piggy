@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piggy VIP Lounge</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #e94560;
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+        }
+
+        body {
+            font-family: 'Apple SD Gothic Neo', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 450px;
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
+            text-align: center;
+            border: 1px solid rgba(233, 69, 96, 0.2);
+        }
+
+        /* 님께서 보내주신 왕관 돼지 사진 설정 */
+        .hero-img {
+            width: 180px; /* 크기 조절 */
+            height: auto;
+            border-radius: 20px;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 5px 15px rgba(233, 69, 96, 0.3));
+        }
+
+        h1 { color: var(--primary-color); margin-bottom: 10px; font-size: 2rem; }
+        .description { color: #95a5a6; font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; }
+
+        #status {
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .success { background: rgba(78, 204, 163, 0.15); color: #4ecca3; border: 1px solid #4ecca3; }
+        .fail { background: rgba(233, 69, 96, 0.15); color: #e94560; border: 1px solid #e94560; }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        #authBtn { background: var(--primary-color); color: white; }
+        #gameBtn { background: #4ecca3; color: white; display: none; }
+        
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <img src="Gemini_Generated_Image_bf3ambf3ambf3amb.png" alt="Crown Pig" class="hero-img">
+        
+        <h1>Piggy VIP Lounge</h1>
+        <p class="description">
+            안녕하세요! 이곳은 VIP 전용 공간입니다.<br>
+            <b>1,000 PIGI</b> 이상 보유 시 게임 입장이 가능합니다.
+        </p>
+
+        <div id="status"></div>
+
+        <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 인증하기</button>
+        <button id="gameBtn" class="btn" onclick="location.href='game.html'">🕹 VIP 게임 입장하기</button>
+    </div>
+
+    <script>
+        const PIGGY_ADDRESS = "0xd371B8EDE3329bb476f8AAF548b8fAc0e9910EA5";
+        const MIN_BALANCE = 1000;
+
+        async function checkToken() {
+            const statusDiv = document.getElementById('status');
+            const authBtn = document.getElementById('authBtn');
+            const gameBtn = document.getElementById('gameBtn');
+
+            if (typeof window.ethereum === 'undefined') {
+                alert("메타마스크를 설치하거나 일반 모드에서 실행해주세요!");
+                return;
+            }
+
+            try {
+                statusDiv.style.display = "block";
+                statusDiv.className = "";
+                statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
+
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                const signer = provider.getSigner();
+                const userAddress = await signer.getAddress();
+
+                const abi = ["function balanceOf(address account) view returns (uint256)"];
+                const contract = new ethers.Contract(PIGGY_ADDRESS, abi, provider);
+
+                const balanceRaw = await contract.balanceOf(userAddress);
+                const balance = parseFloat(ethers.utils.formatEther(balanceRaw));
+
+                if (balance >= MIN_BALANCE) {
+                    statusDiv.className = "success";
+                    statusDiv.innerHTML = `✅ 인증 완료! (현재 보유: ${balance.toLocaleString()} PIGI)`;
+                    authBtn.style.display = "none";
+                    gameBtn.style.display = "block";
+                } else {
+                    statusDiv.className = "fail";
+                    statusDiv.innerHTML = `❌ 인증 실패 (현재 보유: ${balance.toLocaleString()} PIGI)<br>1,000개 이상이 필요합니다.`;
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.className = "fail";
+                statusDiv.innerText = "연결 중 오류가 발생했습니다.";
+            }
+        }
+    </script>
+</body>
+</html>

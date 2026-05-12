@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Piggy Jump Game</title>
+    <style>
+        body { background-color: #1a1a2e; color: white; text-align: center; font-family: sans-serif; overflow: hidden; }
+        canvas { border: 2px solid #e94560; background: #16213e; display: block; margin: 20px auto; touch-action: manipulation; }
+        .info { font-size: 18px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🐷 Piggy Jump!</h1>
+    <p class="info">클릭하거나 스페이스바를 눌러 점프하세요!</p>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <button onclick="location.href='index.html'" style="padding:10px; cursor:pointer;">돌아가기</button>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let bird = { x: 50, y: 150, width: 40, height: 40, gravity: 0.6, lift: -12, velocity: 0 };
+        let pipes = [];
+        let score = 0;
+        let gameActive = true;
+
+        function drawBird() {
+            ctx.font = "40px serif";
+            ctx.fillText("🐷", bird.x, bird.y + bird.height);
+        }
+
+        function createPipe() {
+            const gap = 150;
+            const topHeight = Math.random() * (canvas.height - gap - 100) + 50;
+            pipes.push({ x: canvas.width, top: topHeight, bottom: canvas.height - topHeight - gap });
+        }
+
+        function update() {
+            if (!gameActive) return;
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (bird.y + bird.height > canvas.height || bird.y < 0) gameOver();
+
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 200) createPipe();
+
+            pipes.forEach((pipe, index) => {
+                pipe.x -= 3;
+                if (pipe.x + 50 < 0) { pipes.splice(index, 1); score++; }
+
+                // 충돌 검사
+                if (bird.x + bird.width > pipe.x && bird.x < pipe.x + 50) {
+                    if (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom) gameOver();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBird();
+            ctx.fillStyle = "#e94560";
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, 50, pipe.top);
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, 50, pipe.bottom);
+            });
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("Score: " + score, 10, 30);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            alert("게임 오버! 최종 점수: " + score);
+            location.reload();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') bird.velocity = bird.lift; });
+        canvas.addEventListener('mousedown', () => { bird.velocity = bird.lift; });
+
+        loop();
+    </script>
+</body>
+</html>
