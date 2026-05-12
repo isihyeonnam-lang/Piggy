@@ -54,6 +54,7 @@
         .success { background: rgba(78, 204, 163, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
         .fail { background: rgba(233, 69, 96, 0.15); color: var(--primary-color); border: 1px solid var(--primary-color); }
         .vvip-status { background: rgba(241, 196, 15, 0.15); color: var(--vvip-color); border: 1px solid var(--vvip-color); }
+        
         .btn {
             width: 100%;
             padding: 16px;
@@ -66,6 +67,7 @@
             margin-top: 10px;
         }
         #authBtn { background: var(--primary-color); color: white; }
+        #copyBtn { background: #555; color: white; font-size: 0.9rem; }
         #gameBtn { background: var(--success-color); color: white; }
         #vvipBtn { background: var(--vvip-color); color: #1a1a2e; }
         .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
@@ -83,6 +85,9 @@
         </p>
         <div id="status"></div>
         <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 등급 확인</button>
+        
+        <button id="copyBtn" class="btn hidden" onclick="copyUrl()">주소 복사하기</button>
+
         <div id="actionButtons" class="hidden">
             <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">🕹 VIP 방 입장</button>
             <button id="vvipBtn" class="btn" onclick="enterRoom('VVIP')">👑 VVIP 방 입장</button>
@@ -96,19 +101,28 @@
         let userBalance = 0;
         let isVerified = false;
 
+        function copyUrl() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert("주소가 복사되었습니다! 메타마스크 앱 브라우저에 붙여넣어주세요.");
+            });
+        }
+
         async function checkToken() {
             const statusDiv = document.getElementById('status');
             const authBtn = document.getElementById('authBtn');
+            const copyBtn = document.getElementById('copyBtn');
             const actionButtons = document.getElementById('actionButtons');
 
-            // 💡 [핵심 수정] 모바일 환경에서의 딥링크 처리 방식 고도화
             const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
             const isInMetaMask = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
 
+            // 💡 모바일 브라우저에서 접속한 경우 안내 메시지 출력
             if (isMobile && !isInMetaMask) {
-                // 현재 URL에서 프로토콜을 제거하고 안전하게 인코딩
-                const currentUrl = window.location.href.split('://')[1];
-                location.href = "https://metamask.app.link/dapp/" + currentUrl;
+                statusDiv.style.display = "block";
+                statusDiv.className = "fail";
+                statusDiv.innerHTML = "💡 모바일은 메타마스크 앱 내부의\n[브라우저] 탭에서 접속해야 합니다.\n아래 주소를 복사해 앱에 붙여넣으세요.";
+                copyBtn.classList.remove('hidden');
                 return;
             }
 
@@ -133,14 +147,19 @@
                 isVerified = true;
 
             } catch (err) {
-                console.log("인증 실패: ", err.message);
                 userBalance = 0; 
                 isVerified = true; 
             }
 
             authBtn.classList.add('hidden');
+            copyBtn.classList.add('hidden');
             actionButtons.classList.remove('hidden');
 
+            updateStatusUI();
+        }
+
+        function updateStatusUI() {
+            const statusDiv = document.getElementById('status');
             if (userBalance >= VVIP_BALANCE) {
                 statusDiv.className = "vvip-status";
                 statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
@@ -155,10 +174,8 @@
 
         function enterRoom(type) {
             const statusDiv = document.getElementById('status');
-            if (!isVerified) {
-                alert("먼저 인증 버튼을 눌러주세요!");
-                return;
-            }
+            if (!isVerified) return;
+            
             if (type === 'VVIP') {
                 if (userBalance >= VVIP_BALANCE) {
                     location.href = 'game.html'; 
