@@ -27,38 +27,41 @@
             background: var(--card-bg);
             width: 90%;
             max-width: 450px;
-            padding: 40px;
+            padding: 35px 25px;
             border-radius: 25px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             text-align: center;
             border: 1px solid rgba(233, 69, 96, 0.2);
         }
         .hero-img {
-            width: 180px;
+            width: 160px;
             height: auto;
             border-radius: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             filter: drop-shadow(0 5px 15px rgba(233, 69, 96, 0.3));
         }
-        h1 { color: var(--primary-color); margin-bottom: 10px; font-size: 2rem; }
-        .description { color: #95a5a6; font-size: 0.95rem; line-height: 1.6; margin-bottom: 30px; }
+        h1 { color: var(--primary-color); margin-bottom: 8px; font-size: 1.8rem; }
+        .description { color: #95a5a6; font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
+
+        /* 가이드 박스 디자인 */
         #status {
-            padding: 15px;
-            border-radius: 12px;
+            padding: 18px;
+            border-radius: 15px;
             margin-bottom: 20px;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: none;
             white-space: pre-line;
-            line-height: 1.5;
+            line-height: 1.6;
+            text-align: left;
         }
-        .success { background: rgba(78, 204, 163, 0.15); color: var(--success-color); border: 1px solid var(--success-color); }
-        .fail { background: rgba(233, 69, 96, 0.15); color: var(--primary-color); border: 1px solid var(--primary-color); }
-        .vvip-status { background: rgba(241, 196, 15, 0.15); color: var(--vvip-color); border: 1px solid var(--vvip-color); }
-        
+        .guide-box { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--primary-color); color: #fff; }
+        .success { background: rgba(78, 204, 163, 0.1); border: 1px solid var(--success-color); color: var(--success-color); text-align: center !important; }
+        .fail { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--primary-color); color: var(--primary-color); text-align: center !important; }
+
         .btn {
             width: 100%;
             padding: 16px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
             border-radius: 12px;
             border: none;
@@ -67,26 +70,29 @@
             margin-top: 10px;
         }
         #authBtn { background: var(--primary-color); color: white; }
-        #copyBtn { background: #555; color: white; font-size: 0.9rem; }
+        #copyBtn { background: #34495e; color: white; border: 1px dashed #fff; }
         #gameBtn { background: var(--success-color); color: white; }
         #vvipBtn { background: var(--vvip-color); color: #1a1a2e; }
-        .btn:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
         .hidden { display: none; }
+        .highlight { color: var(--vvip-color); font-weight: bold; }
     </style>
 </head>
 <body>
+
     <div class="container">
         <img src="pig.png" alt="Crown Pig" class="hero-img">
         <h1>Piggy VIP Lounge</h1>
         <p class="description">
-            인증을 통해 입장 등급을 확인하세요.<br>
-            <b>1,000 PIGI</b>: VIP 🕹<br>
-            <b>10,000,001 PIGI</b>: VVIP 👑
+            1,000 PIGI 이상 보유자만 입장이 가능합니다.<br>
+            (VVIP는 10,000,001 PIGI 이상)
         </p>
+
         <div id="status"></div>
+
         <button id="authBtn" class="btn" onclick="checkToken()">지갑 연결 및 등급 확인</button>
-        
-        <button id="copyBtn" class="btn hidden" onclick="copyUrl()">주소 복사하기</button>
+        <button id="copyBtn" class="btn hidden" onclick="copyUrl()">주소 복사하기 (클릭)</button>
 
         <div id="actionButtons" class="hidden">
             <button id="gameBtn" class="btn" onclick="enterRoom('VIP')">🕹 VIP 방 입장</button>
@@ -104,7 +110,7 @@
         function copyUrl() {
             const url = window.location.href;
             navigator.clipboard.writeText(url).then(() => {
-                alert("주소가 복사되었습니다! 메타마스크 앱 브라우저에 붙여넣어주세요.");
+                alert("주소가 복사되었습니다!\n이제 메타마스크 앱을 실행하세요.");
             });
         }
 
@@ -117,12 +123,21 @@
             const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
             const isInMetaMask = typeof window.ethereum !== 'undefined' && window.ethereum.isMetaMask;
 
-            // 💡 모바일 브라우저에서 접속한 경우 안내 메시지 출력
+            // 💡 모바일 사용자를 위한 초정밀 가이드
             if (isMobile && !isInMetaMask) {
                 statusDiv.style.display = "block";
-                statusDiv.className = "fail";
-                statusDiv.innerHTML = "💡 모바일은 메타마스크 앱 내부의\n[브라우저] 탭에서 접속해야 합니다.\n아래 주소를 복사해 앱에 붙여넣으세요.";
+                statusDiv.className = "guide-box";
+                statusDiv.innerHTML = `
+                    <b style="color:var(--primary-color)">⚠️ 모바일 접속 방법</b>
+                    1. 아래 <span class="highlight">[주소 복사]</span> 버튼 클릭
+                    2. <span class="highlight">메타마스크 앱</span> 실행
+                    3. 하단 메뉴의 <span class="highlight">나침반 아이콘(브라우저)</span> 클릭
+                    4. 상단 검색창에 주소 <span class="highlight">붙여넣기</span> 후 이동
+                `;
                 copyBtn.classList.remove('hidden');
+                authBtn.innerText = "안내에 따라 이동해주세요";
+                authBtn.disabled = true;
+                authBtn.style.opacity = "0.5";
                 return;
             }
 
@@ -130,9 +145,7 @@
                 statusDiv.style.display = "block";
                 statusDiv.innerText = "⏳ 보유량을 확인 중입니다...";
 
-                if (typeof window.ethereum === 'undefined') {
-                    throw new Error("No Wallet");
-                }
+                if (typeof window.ethereum === 'undefined') throw new Error("No Wallet");
 
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 await provider.send("eth_requestAccounts", []);
@@ -160,15 +173,16 @@
 
         function updateStatusUI() {
             const statusDiv = document.getElementById('status');
+            statusDiv.style.textAlign = "center";
             if (userBalance >= VVIP_BALANCE) {
                 statusDiv.className = "vvip-status";
-                statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
+                statusDiv.innerHTML = `👑 VVIP 등급 확인!\n(${userBalance.toLocaleString()} PIGI 보유)`;
             } else if (userBalance >= MIN_BALANCE) {
                 statusDiv.className = "success";
-                statusDiv.innerHTML = `✅ VIP 등급 확인!\n(보유: ${userBalance.toLocaleString()} PIGI)`;
+                statusDiv.innerHTML = `✅ VIP 등급 확인!\n(${userBalance.toLocaleString()} PIGI 보유)`;
             } else {
                 statusDiv.className = "fail";
-                statusDiv.innerHTML = `❌ 자격 미달\n(보유: ${userBalance.toLocaleString()} PIGI)\nVIP도 못 들어오네 ㅉㅉ PIGI 사라`;
+                statusDiv.innerHTML = `❌ 자격 미달\n(${userBalance.toLocaleString()} PIGI 보유)\nPIGI 사라`;
             }
         }
 
